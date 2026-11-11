@@ -169,3 +169,9 @@ class PosOrder(models.Model):
             "fiskaly_receipt_id": receipt_id,
             "fiskaly_outage": not signed,
         }
+
+    def _load_pos_data_fields(self, config):
+        res = super()._load_pos_data_fields(config)
+        if not res:
+            return res
+        return res + ["fiskaly_outage"]

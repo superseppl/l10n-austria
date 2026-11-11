@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.inherit.l10n_at_pos_rksv_fiskaly.form</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_at_pos_rksv.res_config_settings_view_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='asign_serial_hex']" position="attributes">
+                <attribute name="required">asign_enabled and asign_method != 'fiskaly'</attribute>
+                <attribute name="invisible">asign_method == 'fiskaly'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='asign_key']" position="attributes">
+                <attribute name="required">asign_enabled and asign_method != 'fiskaly'</attribute>
+                <attribute name="invisible">asign_method == 'fiskaly'</attribute>
+            </xpath>
+
+            <block id="pos_l10n_at" position="after">
+                <block title="RKSV Austria (fiskaly)" id="pos_l10n_at_fiskaly" invisible="asign_method != 'fiskaly'">
+                    <setting string="fiskaly Cash Register" help="Cash register of this POS at fiskaly" invisible="not asign_enabled or asign_method != 'fiskaly'">
+                        <div class="content-group mt16">
+                            <div class="row">
+                                <label string="Cash Register State" for="l10n_at_cash_register_state" class="col-lg-4 o_light_label" />
+                                <field name="l10n_at_cash_register_state" />
+                                <button
+                                    name="action_l10n_at_fiskaly_init_cash_register"
+                                    type="object"
+                                    string="Initialize"
+                                    class="btn-link"
+                                    invisible="l10n_at_cash_register_state == 'initialized'"
+                                />
+                            </div>
+                            <div class="row" invisible="not l10n_at_cash_regid">
+                                <label string="Cash Register ID" for="l10n_at_cash_regid" class="col-lg-4 o_light_label" />
+                                <field name="l10n_at_cash_regid" />
+                            </div>
+                            <div class="row" invisible="not l10n_at_cash_register_serial">
+                                <label string="Serial" for="l10n_at_cash_register_serial" class="col-lg-4 o_light_label" />
+                                <field name="l10n_at_cash_register_serial" />
+                            </div>
+                        </div>
+                    </setting>
+
+                    <setting string="fiskaly Credentials" help="Company-wide fiskaly SIGN AT API credentials (dashboard.fiskaly.com)">
+                        <div class="content-group mt16">
+                            <div class="row">
+                                <label string="API Key" for="l10n_at_fiskaly_api_key" class="col-lg-3 o_light_label" />
+                                <field name="l10n_at_fiskaly_api_key" password="True" />
+                            </div>
+                            <div class="row">
+                                <label string="API Secret" for="l10n_at_fiskaly_api_secret" class="col-lg-3 o_light_label" />
+                                <field name="l10n_at_fiskaly_api_secret" password="True" />
+                            </div>
+                            <div class="row">
+                                <label string="Organization ID" for="l10n_at_fiskaly_organization_id" class="col-lg-3 o_light_label" />
+                                <field name="l10n_at_fiskaly_organization_id" />
+                            </div>
+                            <div class="row">
+                                <label string="Environment" for="l10n_at_fiskaly_environment" class="col-lg-3 o_light_label" />
+                                <field name="l10n_at_fiskaly_environment" />
+                            </div>
+                            <div class="text-muted mt8">
+                                SIGN AT derives TEST vs. LIVE from the API key itself. Only a LIVE key
+                                produces legally binding signatures.
+                            </div>
+                            <div class="row">
+                                <button
+                                    name="action_l10n_at_fiskaly_authenticate"
+                                    type="object"
+                                    string="Authenticate"
+                                    class="btn-secondary"
+                                />
+                            </div>
+                        </div>
+                    </setting>
+
+                    <setting string="Signature Creation Unit" help="One SCU per legal entity; every cash register signs through it">
+                        <div class="content-group mt16">
+                            <div class="row">
+                                <label string="SCU ID" for="l10n_at_pos_company_scuid" class="col-lg-3 o_light_label" />
+                                <field name="l10n_at_pos_company_scuid" />
+                            </div>
+                            <div class="row">
+                                <label string="State" for="l10n_at_fiskaly_scu_state" class="col-lg-3 o_light_label" />
+                                <field name="l10n_at_fiskaly_scu_state" />
+                            </div>
+                            <div class="row">
+                                <button
+                                    name="action_l10n_at_fiskaly_provision_scu"
+                                    type="object"
+                                    string="Create Signature Creation Unit"
+                                    class="btn-link"
+                                    invisible="l10n_at_fiskaly_scu_state == 'initialized'"
+                                />
+                                <button
+                                    name="action_l10n_at_fiskaly_init_scu"
+                                    type="object"
+                                    string="Initialize"
+                                    class="btn-link"
+                                    invisible="l10n_at_fiskaly_scu_state not in ('created', 'pending')"
+                                />
+                            </div>
+                        </div>
+                    </setting>
+
+                    <setting string="FinanzOnline" help="Dedicated Cash Register Webservice User, not your personal login">
+                        <div class="content-group mt16">
+                            <div class="row">
+                                <label string="Participant ID" for="l10n_at_fon_participant_id" class="col-lg-3 o_light_label" />
+                                <field name="l10n_at_fon_participant_id" />
+                            </div>
+                            <div class="row">
+                                <label string="User ID" for="l10n_at_fon_user_id" class="col-lg-3 o_light_label" />
+                                <field name="l10n_at_fon_user_id" />
+                            </div>
+                            <div class="row">
+                                <label string="User PIN" for="l10n_at_fon_user_pin" class="col-lg-3 o_light_label" />
+                                <field name="l10n_at_fon_user_pin" password="True" />
+                            </div>
+                            <div class="row">
+                                <label string="Authenticated" for="l10n_at_is_fon_authenticated" class="col-lg-3 o_light_label" />
+                                <field name="l10n_at_is_fon_authenticated" />
+                                <button
+                                    name="action_l10n_at_fiskaly_fon_auth"
+                                    type="object"
+                                    string="Link FinanzOnline"
+                                    class="btn-link"
+                                    invisible="l10n_at_is_fon_authenticated"
+                                />
+                            </div>
+                            <div class="text-muted mt8">
+                                Registering the SCU and the cash register with FinanzOnline requires this
+                                link. fiskaly stores it; you only do this once.
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+            </block>
+        </field>
+    </record>
+</odoo>

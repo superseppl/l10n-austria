@@ -71,3 +71,5 @@ class ResConfigSettings(models.TransientModel):
         self.ensure_one()
         self.pos_config_id.action_fiskaly_initialize_cash_register()
         return self._l10n_at_notify("Cash register created, registered and initialized.")
+
+    asign_method = fields.Selection(selection_add=[("fiskaly", "fiskaly")])

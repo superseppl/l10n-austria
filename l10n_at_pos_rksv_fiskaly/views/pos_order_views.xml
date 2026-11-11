@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_pos_pos_form" model="ir.ui.view">
+        <field name="name">pos.order.inherit.l10n_at_pos_rksv_fiskaly.form</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_pos_form" />
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page
+                    string="RKSV Austria"
+                    name="l10n_at_pos_rksv_fiskaly"
+                    invisible="not fiskaly_receipt_id"
+                >
+                    <group>
+                        <field name="fiskaly_receipt_id" />
+                        <field name="asign_seq" string="RKSV Receipt Number" />
+                        <field name="fiskaly_outage" />
+                        <field name="asign_qrcode" widget="text" />
+                    </group>
+                </page>
+            </notebook>
+        </field>
+    </record>
+
+    <record id="view_pos_order_tree" model="ir.ui.view">
+        <field name="name">pos.order.inherit.l10n_at_pos_rksv_fiskaly.list</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_tree" />
+        <field name="arch" type="xml">
+            <field name="amount_total" position="after">
+                <field name="fiskaly_outage" optional="hide" />
+            </field>
+        </field>
+    </record>
+</odoo>

@@ -10,7 +10,15 @@
     "license": "LGPL-3",
     "depends": ["l10n_at_pos_rksv"],
     "external_dependencies": {"python": ["requests"]},
-    "data": [],
+    "data": [
+        "views/res_config_settings_views.xml",
+        "views/pos_order_views.xml",
+    ],
+    "assets": {
+        "point_of_sale._assets_pos": [
+            "l10n_at_pos_rksv_fiskaly/static/src/**/*",
+        ],
+    },
     "development_status": "Alpha",
     "installable": True,
 }

@@ -140,3 +140,26 @@ class TestFiskalyProvider(TransactionCase, TestAsignCommonMixin):
         self.env.company.l10n_at_fiskaly_api_key = False
         with self.assertRaises(ValidationError):
             self.pos_config._check_asign_config()
+
+
+class TestFiskalySettings(TransactionCase):
+    """The settings wizard accepts method fiskaly without serial and key."""
+
+    # Case 10: the form loads and a POS can be switched to fiskaly and saved
+    def test_settings_save_with_fiskaly(self):
+        self.env.company.write(
+            {"l10n_at_fiskaly_api_key": "key", "l10n_at_fiskaly_api_secret": "secret"}
+        )
+        config = self.env["pos.config"].create({"name": "Fiskaly Settings"})
+        settings = self.env["res.config.settings"].create({"pos_config_id": config.id})
+        self.env["res.config.settings"].get_views([(False, "form")])
+        settings.write(
+            {
+                "asign_enabled": True,
+                "asign_method": "fiskaly",
+                "asign_fid": "ATU12345675",
+            }
+        )
+        settings.execute()
+        self.assertEqual(config.asign_method, "fiskaly")
+        self.assertTrue(config.asign_enabled)
