@@ -42,6 +42,20 @@ class PosConfig(models.Model):
         self.ensure_one()
         return self.asign_method == "fiskaly" or super()._asign_external_numbering()
 
+    def _asign_dep_export(self):
+        """The DEP of a fiskaly register lives at fiskaly: the receipts' own
+        asign_dep stays empty, so the core's local export would be empty."""
+        self.ensure_one()
+        if self.asign_method != "fiskaly":
+            return super()._asign_dep_export()
+        company = self.company_id
+        if not self.l10n_at_cash_regid:
+            raise UserError(
+                self.env._("POS %s has no fiskaly cash register yet.", self.name)
+            )
+        client = company._get_fiskaly_client()
+        return company._fiskaly_run(client.cash_register_export, self.l10n_at_cash_regid)
+
     def _asign_check_fiskaly_config(self):
         """No certificate and no local AES key: the SCU at fiskaly holds them.
         The register may still be uninitialized here (it is initialized from

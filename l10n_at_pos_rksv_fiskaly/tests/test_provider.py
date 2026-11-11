@@ -169,3 +169,59 @@ class TestFiskalySettings(TransactionCase):
         settings.execute()
         self.assertEqual(config.asign_method, "fiskaly")
         self.assertTrue(config.asign_enabled)
+
+
+DEP_REGISTER = {"Belege-Gruppe": [{"Signaturzertifikat": "c", "Zertifizierungsstellen": [], "Belege-kompakt": ["r1", "r2"]}]}
+
+
+class TestFiskalyDepExport(TransactionCase, TestAsignCommonMixin):
+    """The DEP of a fiskaly register is fetched from fiskaly."""
+
+    def setUp(self):
+        super().setUp()
+        self.env.company.write(
+            {"l10n_at_fiskaly_api_key": "key", "l10n_at_fiskaly_api_secret": "secret"}
+        )
+        self.open_session(
+            {
+                "name": "Fiskaly DEP",
+                "asign_enabled": True,
+                "asign_pid": "K93",
+                "asign_fid": "ATU12345675",
+                "asign_method": "fiskaly",
+                "l10n_at_cash_regid": REGISTER_ID,
+                "l10n_at_cash_register_state": "initialized",
+            }
+        )
+
+    # Case 1: fiskaly register -> the export is fiskaly's, asked for its register id
+    def test_dep_export_from_fiskaly(self):
+        with mock.patch.object(
+            FiskalyClient, "cash_register_export", return_value=DEP_REGISTER
+        ) as export:
+            result = self.pos_config._asign_dep_export()
+        self.assertEqual(result, DEP_REGISTER)
+        export.assert_called_once_with(REGISTER_ID)
+
+    # Case 2: no cash register id yet -> error, no call
+    def test_dep_export_without_register(self):
+        self.pos_config.l10n_at_cash_regid = False
+        with mock.patch.object(FiskalyClient, "cash_register_export") as export:
+            with self.assertRaises(UserError):
+                self.pos_config._asign_dep_export()
+        export.assert_not_called()
+
+    # Case 3: API error -> UserError naming the problem
+    def test_dep_export_api_error(self):
+        error = FiskalyApiError("boom", status_code=404, payload={})
+        with mock.patch.object(FiskalyClient, "cash_register_export", side_effect=error):
+            with self.assertRaises(UserError):
+                self.pos_config._asign_dep_export()
+
+    # Case 4: other method -> core export, fiskaly is not called
+    def test_dep_export_other_method_uses_core(self):
+        self.pos_config.asign_method = "online"
+        with mock.patch.object(FiskalyClient, "cash_register_export") as export:
+            result = self.pos_config._asign_dep_export()
+        export.assert_not_called()
+        self.assertEqual(result["Belege-Gruppe"][0]["Belege-kompakt"], [])

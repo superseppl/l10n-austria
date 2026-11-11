@@ -313,3 +313,10 @@ class FiskalyClient:
 
     def receipt_list(self, cash_register_id):
         return self._request("GET", f"/cash-register/{cash_register_id}/receipt")
+
+    def cash_register_export(self, cash_register_id):
+        """GET /cash-register/{id}/export -> DEP7 ({"Belege-Gruppe": [...]}),
+        synchronous. Optional filters (receipt number, signature time) are not
+        used: the DEP is always exported complete, as the Kassenrichtlinie
+        asks for the full Datenerfassungsprotokoll."""
+        return self._request("GET", f"/cash-register/{cash_register_id}/export")
