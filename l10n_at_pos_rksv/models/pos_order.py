@@ -288,7 +288,26 @@ class PosOrder(models.Model):
         }
 
     def _asign_create_signature(self, last_order):
-        """Sign the prepared payload and return the full signature data."""
+        """Sign this receipt with the provider of its POS and return the data.
+
+        The provider is picked by ``pos.config.asign_method``: a provider
+        module adds a selection value and a ``_asign_sign_<method>`` method that
+        returns the same dict as :meth:`_asign_sign_online`.
+        """
+        method = self.session_id.config_id.asign_method
+        handler = getattr(self, f"_asign_sign_{method}", None) if method else None
+        if handler is None:
+            raise UserError(
+                self.env._("No RKSV signing provider for method %s.", method or "")
+            )
+        return handler(last_order)
+
+    def _asign_sign_card(self, last_order):
+        """Card method: kept on the online signing path as before."""
+        return self._asign_sign_online(last_order)
+
+    def _asign_sign_online(self, last_order):
+        """Sign the prepared payload online (A-Trust a.sign RK)."""
         data = self._asign_prepare_signature(last_order)
         user, password = self.env["asign.cert"]._get_login(data["asign_serial"])
 

@@ -198,13 +198,6 @@ class PosConfig(models.Model):
                         config.name,
                     )
                 )
-            if not config.asign_serial_hex:
-                raise ValidationError(
-                    self.env._(
-                        "Austrian RKSV activated but serial is empty for POS %s",
-                        config.name,
-                    )
-                )
             if not config.asign_fid:
                 raise ValidationError(
                     self.env._(
@@ -219,27 +212,43 @@ class PosConfig(models.Model):
                         config.name,
                     )
                 )
-            if not config.asign_key:
-                raise ValidationError(
-                    self.env._(
-                        "Austrian RKSV activated but encryption key is empty "
-                        "for POS %s",
-                        config.name,
-                    )
-                )
-            if len(base64.b64decode(config.asign_key)) != AES_KEY_SIZE:
-                raise ValidationError(
-                    self.env._(
-                        "Austrian RKSV activated but encryption key has invalid "
-                        "length (%(length)s != %(expected)s) for POS %(name)s",
-                        length=len(config.asign_key),
-                        expected=AES_KEY_SIZE,
-                        name=config.name,
-                    )
-                )
+            # Provider specific requirements: a provider module adds a method
+            # and an ``_asign_check_<method>_config`` that raises on bad input.
+            # "card" has always been signed through the online path.
+            method = "online" if config.asign_method == "card" else config.asign_method
+            check = getattr(config, f"_asign_check_{method}_config", None)
+            if check:
+                check()
 
-            if config.asign_method == "online":
-                self.env["asign.cert"]._get_cert(config.asign_serial_hex)
+    def _asign_check_online_config(self):
+        """Requirements of the local chain signed by A-Trust a.sign RK."""
+        self.ensure_one()
+        if not self.asign_serial_hex:
+            raise ValidationError(
+                self.env._(
+                    "Austrian RKSV activated but serial is empty for POS %s",
+                    self.name,
+                )
+            )
+        if not self.asign_key:
+            raise ValidationError(
+                self.env._(
+                    "Austrian RKSV activated but encryption key is empty for POS %s",
+                    self.name,
+                )
+            )
+        if len(base64.b64decode(self.asign_key)) != AES_KEY_SIZE:
+            raise ValidationError(
+                self.env._(
+                    "Austrian RKSV activated but encryption key has invalid "
+                    "length (%(length)s != %(expected)s) for POS %(name)s",
+                    length=len(self.asign_key),
+                    expected=AES_KEY_SIZE,
+                    name=self.name,
+                )
+            )
+        if self.asign_method == "online":
+            self.env["asign.cert"]._get_cert(self.asign_serial_hex)
 
     @api.depends("asign_key")
     def _compute_asign_crc(self):
