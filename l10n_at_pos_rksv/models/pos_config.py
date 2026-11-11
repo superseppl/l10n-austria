@@ -139,6 +139,15 @@ class PosConfig(models.Model):
         for config in self:
             config.asign_start_order_id = config._get_asign_start_order()
 
+    def _asign_external_numbering(self):
+        """Whether the signing provider assigns the receipt number itself.
+
+        Provider modules override this; they then return ``asign_seq`` (and
+        ``name``) in the dict of ``_asign_sign_<method>``.
+        """
+        self.ensure_one()
+        return False
+
     def _asign_seq(self):
         """Return the dedicated gapless RKSV receipt sequence, creating it once.
 

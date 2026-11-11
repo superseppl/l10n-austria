@@ -67,3 +67,54 @@ class TestProviderDispatch(TransactionCase, TestAsignCommonMixin):
         self.pos_config.write({"asign_method": False})
         with self.assertRaises(UserError):
             self.order._asign_create_signature(self.env["pos.order"])
+
+
+class TestExternalNumbering(TestProviderDispatch):
+    """A provider that numbers receipts itself is not held to the local gap check."""
+
+    FISKALY_NUMBER = 12  # not last + 1: Startbeleg and close receipts used numbers
+    LAST_NUMBER = 10
+
+    def _result(self):
+        return {
+            "asign_state": "s",
+            "asign_seq": self.FISKALY_NUMBER,
+            "asign_qrcode": "qr",
+            "asign_serial": "ser",
+            "asign_counter": "0",
+            "asign_type": "o",
+            "asign_dep": "dep",
+        }
+
+    def _two_orders(self):
+        last = self.order
+        last.write(
+            {"asign_state": "s", "asign_seq": self.LAST_NUMBER, "state": "paid"}
+        )
+        new = last.copy({"asign_state": "u", "state": "paid"})
+        new.write({"asign_state": "u", "state": "paid"})
+        return new
+
+    # Case 4: local numbering keeps the gap check (provider number 12 != 10 + 1)
+    def test_local_numbering_aborts_on_gap(self):
+        new = self._two_orders()
+        with mock.patch.object(
+            type(new), "_asign_sign_online", return_value=self._result()
+        ):
+            new._asign_add_signature()
+        self.assertEqual(new.asign_state, "u")
+
+    # Case 5: external numbering accepts the provider number and stores it
+    def test_external_numbering_takes_provider_number(self):
+        new = self._two_orders()
+        with (
+            mock.patch.object(
+                type(self.pos_config), "_asign_external_numbering", return_value=True
+            ),
+            mock.patch.object(
+                type(new), "_asign_sign_online", return_value=self._result()
+            ),
+        ):
+            new._asign_add_signature()
+        self.assertEqual(new.asign_state, "s")
+        self.assertEqual(new.asign_seq, self.FISKALY_NUMBER)

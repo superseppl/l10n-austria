@@ -396,7 +396,14 @@ class PosOrder(models.Model):
                     # strictly consecutive receipt numbers. A mismatch points to
                     # a tampered sequence or a concurrent signer; abort before
                     # writing a broken chain (the savepoint releases the number).
-                    if last_order and order.asign_seq != last_order.asign_seq + 1:
+                    # A provider that numbers receipts itself (e.g. fiskaly, whose
+                    # Startbeleg and month/year receipts consume numbers) returns
+                    # the number in its result, so the local sequence is no check.
+                    if (
+                        last_order
+                        and not config._asign_external_numbering()
+                        and order.asign_seq != last_order.asign_seq + 1
+                    ):
                         raise AsignSequenceError(order.id, order.asign_seq)
                     signature = order._asign_create_signature(last_order)
                     order.write(signature)
