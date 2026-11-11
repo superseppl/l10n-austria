@@ -1,5 +1,6 @@
 # Copyright 2026 Sebastian Bader
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
+import hashlib
 import logging
 import uuid
 from collections import defaultdict
@@ -106,7 +107,10 @@ class PosOrder(models.Model):
         """
         self.ensure_one()
         key = f"{self.config_id.l10n_at_cash_regid}/{self.id}/{receipt_type}"
-        return str(uuid.uuid5(uuid.NAMESPACE_URL, key))
+        # fiskaly validates the id as a version 4 UUID, so a v5 UUID is refused:
+        # hash the key and set the v4 version/variant bits on the digest.
+        digest = hashlib.sha256(key.encode()).digest()[:16]
+        return str(uuid.UUID(bytes=digest, version=4))
 
     def _asign_sign_fiskaly(self, last_order):
         """Provider hook of l10n_at_pos_rksv: sign through the fiskaly SIGN AT API.

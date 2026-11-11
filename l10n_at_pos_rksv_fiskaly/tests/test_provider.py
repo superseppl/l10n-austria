@@ -1,4 +1,5 @@
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
+import re
 from unittest import mock
 
 import requests
@@ -9,6 +10,10 @@ from odoo.tests.common import TransactionCase
 
 from ..models.fiskaly_client import FiskalyApiError, FiskalyClient
 
+# receipt_id pattern fiskaly validates (SIGN AT API, E_FAILED_SCHEMA_VALIDATION)
+FISKALY_UUID_RE = re.compile(
+    r"^[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}$"
+)
 LAST_NUMBER = 10  # receipt number of the previous signed order
 FISKALY_NUMBER = 12  # fiskaly also numbers Startbeleg/close receipts: not 11
 QR = "_R1-AT0_K01_12"
@@ -70,6 +75,7 @@ class TestFiskalyProvider(TransactionCase, TestAsignCommonMixin):
         self.assertEqual(normal, self.order._fiskaly_receipt_uuid("NORMAL"))
         self.assertNotEqual(normal, self.order._fiskaly_receipt_uuid("CANCELLATION"))
         self.assertNotEqual(normal, self._order()._fiskaly_receipt_uuid("NORMAL"))
+        self.assertRegex(normal, FISKALY_UUID_RE)
 
     # Case 2: a signed receipt returns fiskaly's number, QR and no outage flag
     def test_signed(self):
